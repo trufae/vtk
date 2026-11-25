@@ -50,7 +50,7 @@ mut:
 	interrupted  bool
 	resumed      bool
 	read_buffer  []u8
-	wake         [2]i32 = [-1, -1]!
+	wake         [2]i32
 	polls        []C.pollfd
 	write_fd     int = -1
 	output_queue []TtyOutput
@@ -199,6 +199,7 @@ fn (mut d Driver) read(timeout int, terminals []&Ctl) string {
 }
 
 fn (mut d Driver) open_wake_pipe() {
+	d.wake = [-1, -1]!
 	if C.pipe(&d.wake[0]) != 0 { return }
 	for fd in d.wake {
 		if C.fcntl(fd, C.F_SETFL, C.O_NONBLOCK) < 0 || C.fcntl(fd, C.F_SETFD, C.FD_CLOEXEC) < 0 {
