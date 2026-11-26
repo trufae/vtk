@@ -69,4 +69,4 @@ The model, formulas and UI are separate files. The UI uses `table.edit` for atom
 batches, `table.edit_value` for raw text, `table.compare` for precise numeric
 sorting, `table.cell_style` for calculated/header/custom colors, and the public
 selection and view/source coordinate methods. It does not access private widget
-fields. See [the table API](../../lib/TABLES.md) for configuration and contracts.
+fields. See the [table API](../../doc/tables.md) and [chart API](../../doc/charts.md).

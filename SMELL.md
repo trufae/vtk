@@ -22,7 +22,7 @@ Keep IDs stable when updating statuses. Follow [RULES.md](RULES.md) when address
 
 API-03 covers direct field writes; API-05 covers the `set_text` mutation contract.
 API-06 retains distinct close and disposal operations with shared cleanup;
-see the lifecycle contracts in [README.md](README.md).
+see the [window lifecycle contracts](doc/application.md#window-lifecycle).
 
 ## Memory, allocation and complexity review
 

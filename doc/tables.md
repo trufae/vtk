@@ -3,11 +3,21 @@
 Tables fetch cells from application data through `CellCallback`. Callback row and
 column arguments, `value` (the active row), style coordinates and edit batches
 always use **source IDs**. Sorting or moving a row/column changes only the view.
-Existing tables default to single-row selection, equal-width columns and copy
+Tables default to single-row selection, equal-width columns and copy
 support. Sorting, dragging, cell editing, paste and Tab navigation are opt-in.
 
+This example displays two source rows. Add the function at module scope and
+create the table when building a window.
+
 ```v
-mut grid := vtk.table(fetch_cell, row_count)
+fn fetch_cell(_ &vtk.Ctl, row int, col int) string {
+	rows := [['Pencils', '2.50', '101'], ['Paper', '5.00', '102']]
+	return rows[row][col]
+}
+```
+
+```v
+mut grid := vtk.table(fetch_cell, 2)
 grid.table_column('Name', width: 24, min_width: 8)
 grid.table_column('Price', width: 12, numeric: true, align: .right)
 grid.table_column('ID', width: 10, editable: false)
@@ -20,6 +30,7 @@ grid.table.reorderable_rows = true
 grid.table.row_numbers = true
 grid.table.grid_lines = true
 grid.table.tab_navigation = true
+window.add(mut grid)
 ```
 
 `table_column` returns its source column ID. Column options include `width` (zero
@@ -34,9 +45,9 @@ and cells. `table_column_width(id)`, `table_column_rect(id)` and
 
 `table_select(x, y, x2, y2)` selects an inclusive rectangle using zero-based
 **view** column/row coordinates. `multi_select` must be enabled for different
-endpoints. The configured mode expands the rectangle to whole rows or columns;
+endpoints. The configured mode expands the rectangle to whole rows or columns.
 `.none` disables selection and copy. `table_selection()` returns a normalized
-`TableRange` (`x`, `y`, `x2`, `y2`); `x == -1` means there is no selection.
+`TableRange` (`x`, `y`, `x2`, `y2`) with `x == -1` for an empty selection.
 
 ```v
 grid.table.selection = .cells
@@ -54,20 +65,20 @@ source column ID. `set_value(source_row)` keeps its existing meaning and collaps
 the row anchor. Custom mouse handlers that calculate a display row must translate
 it before calling `set_value` or accessing application data.
 
-Click selects; Shift-click, Shift-arrows and dragging extend ranges when enabled.
+Click to select. Shift-click, Shift-arrows, and dragging extend ranges when enabled.
 In Cells mode, clicking/dragging the row-number gutter selects complete rows.
-In Columns mode, dragging headers selects columns; Alt-drag moves them instead.
+In Columns mode, drag headers to select columns. Alt-drag moves a column.
 Arrows navigate in view order. Cells mode uses Left/Right for columns, Home/End
 for the current row, Ctrl-Home/End for the table, and Page Up/Down for rows.
 Ctrl-A selects all when multiple selection is enabled. Optional Tab / Shift-Tab
-navigation wraps between cells; F6 moves focus out to another control.
+navigation wraps between cells. F6 moves focus out to another control.
 Selection changes emit `changed`, including changes to the active column/range.
 
 ## Sorting and reordering
 
 `table_sort(source_column, .ascending)` / `.descending` / `.none` work from code
 regardless of the interactive `sortable` option. Sorting is stable, preserving
-source order for equal keys. Text compares case-insensitively; `numeric: true`
+source order for equal keys. Text compares case-insensitively. `numeric: true`
 compares numbers before text in ascending order. Supply `table.compare` for a
 custom comparator `fn (&vtk.Ctl, left_row, right_row, column int) int`.
 Negative, zero and positive results mean before, equal and after.
@@ -80,7 +91,8 @@ active column. `table_sort_state()` returns the source column and direction.
 `table_move_row(from_view_row, to_view_row)` and
 `table_move_column(from_view_column, to_view_column)` move view entries without
 mutating application data. Interactive column dragging follows the pointer and
-reflows headers live. Column boundary dragging resizes live; double-click fits.
+reflows headers live. Drag a column boundary to resize it, or double-click
+to fit its contents.
 Alt-dragging row numbers moves rows and clears the sort indicator. Sorting and
 moving entries collapse range anchors while preserving the active source cell.
 
@@ -90,11 +102,11 @@ moving entries collapse range anchors while preserving the active source cell.
 notifications use the usual control/app callback. They may close or destroy the
 control. `changed` remains the selection notification.
 
-Call `table_refresh()` after replacing/changing source data: it resets manual row
-order and reapplies any active sort. A changed `row_count` is detected automatically.
+Call `table_refresh()` after replacing or changing source data. It resets manual
+row order and reapplies any active sort. VTK detects changes to `row_count` automatically.
 Editing automatically reapplies active sorting, while retaining manual row order
 when no sort is active. Simple unsorted tables allocate no per-row view mapping.
-Shift-wheel and horizontal wheel events scroll columns; row numbers remain fixed.
+Shift-wheel and horizontal wheel events scroll columns while keeping row numbers fixed.
 
 ## Editing and clipboard
 
@@ -111,13 +123,15 @@ grid.table.edit_value = raw_cell // optional CellCallback, distinct from display
 app.ctrl_c = .copy
 ```
 
-F2/Enter or typing opens a cell editor; Apply/Enter commits, Escape cancels.
+F2, Enter, or typing opens a cell editor. Apply or Enter commits the edit, and
+Escape cancels it.
 Rejected edits retain their draft and display the returned error. Read-only
 tables (`readonly`) and columns cannot be edited. `table_begin_edit()` opens the
 same editor from application code. `table_apply([]TableCellEdit)` validates every
 target and calls `table.edit` **once**, then refreshes sorting and emits
 `table.edited`. The edit callback must validate the whole batch before mutating
-application data and leave it unchanged on error; it can record one undo action.
+application data and leave it unchanged on error. It can record the batch as
+one undo action.
 
 `table_selection_text()` and `app.copy_focus()` copy the selected rectangle as
 TSV in view order, quoting tabs, newlines and quotes. `table.copyable` defaults to
@@ -143,9 +157,9 @@ Style coordinates and callback arguments use source IDs, so colors follow their
 data through sorting/reordering. `fg` and `bg` default to `-1` (inherit), and
 `attr` supports the existing `bold`, `underline`, etc. flags. Colors use the same
 palette/truecolor encoding as the rest of VTK. A callback's explicit colors
-override stored cell styles; unset fields inherit them. `table_clear_cell_styles()`
+override stored cell styles. Unset fields inherit them. `table_clear_cell_styles()`
 clears stored styles, retaining the callback. Selection colors take precedence to
-keep the selected area readable; the active cell also receives bold underline.
+keep the selected area readable. The active cell also receives bold underline.
 
-The [spreadsheet example](../examples/spread/README.md) demonstrates this API
+The [spreadsheet example](../app/spread/README.md) demonstrates this API
 with formulas, undo/redo, workbook persistence, editable colors and sheet tabs.
